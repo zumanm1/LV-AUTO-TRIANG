@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -14,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   MessageSquare,
   Send,
@@ -22,7 +25,11 @@ import {
   FileText,
   Brain,
   Zap,
+  AlertTriangle,
+  CheckCircle,
+  Settings,
 } from "lucide-react";
+import ollamaService from "@/services/ollamaService";
 
 interface Message {
   id: string;
@@ -48,8 +55,36 @@ const ChatInterface = () => {
     "direct",
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [serverStatus, setServerStatus] = useState<"checking" | "connected" | "disconnected">("checking");
+  const [currentModel, setCurrentModel] = useState<string>("");
+  const [showChatSettings, setShowChatSettings] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState<string>(
+    localStorage.getItem("systemPrompt") || 
+    "You are an AI Network Engineering Assistant. You help network engineers with configuration, troubleshooting, and best practices. Please provide helpful, accurate, and detailed responses. If the user asks about network concepts, explain them clearly. If they ask for configuration examples, provide practical examples. If they ask for troubleshooting help, provide step-by-step guidance."
+  );
 
-  const handleSendMessage = () => {
+  // Check server status and load configuration on component mount
+  useEffect(() => {
+    const checkServerAndLoadConfig = async () => {
+      try {
+        const isConnected = await ollamaService.checkServerStatus();
+        setServerStatus(isConnected ? "connected" : "disconnected");
+        
+        if (isConnected) {
+          const models = await ollamaService.getAvailableModels();
+          if (models.length > 0) {
+            setCurrentModel(models[0]);
+          }
+        }
+      } catch (error) {
+        setServerStatus("disconnected");
+      }
+    };
+
+    checkServerAndLoadConfig();
+  }, []);
+
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
     const userMessage: Message = {
@@ -64,27 +99,39 @@ const ChatInterface = () => {
     setInputMessage("");
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
+    try {
+      // Get real AI response from Ollama
+      const aiResponse = await ollamaService.generateResponse(inputMessage, activeMode);
+      
+      const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: getAIResponse(inputMessage, activeMode),
+        content: aiResponse,
         sender: "ai",
         timestamp: new Date().toISOString(),
         mode: activeMode,
       };
-      setMessages((prev) => [...prev, aiResponse]);
+      
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I apologize, but I encountered an error while processing your request. Please check your Ollama server connection and try again.",
+        sender: "ai",
+        timestamp: new Date().toISOString(),
+        mode: activeMode,
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const getAIResponse = (query: string, mode: string): string => {
-    const responses = {
-      direct: `Based on your query about "${query}", here's what I can help with: Network configuration, troubleshooting, and best practices. Would you like me to provide specific commands or explanations?`,
-      document: `I've searched through your uploaded network documentation for "${query}". Here are the relevant findings from your documents, including configuration examples and troubleshooting guides.`,
-      agent: `I'm analyzing your complex request about "${query}". Let me break this down into actionable steps and provide a comprehensive solution using advanced AI capabilities.`,
-    };
-    return responses[mode as keyof typeof responses];
+  const handleSaveSystemPrompt = () => {
+    localStorage.setItem("systemPrompt", systemPrompt);
+    setShowChatSettings(false);
   };
 
   const getModeIcon = (mode: string) => {
@@ -120,6 +167,36 @@ const ChatInterface = () => {
         <p className="text-gray-500">
           Interact with AI for network engineering assistance
         </p>
+        
+        {/* Server Status */}
+        <div className="mt-4">
+          {serverStatus === "checking" && (
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                Checking Ollama server connection...
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {serverStatus === "connected" && (
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                Connected to Ollama server {currentModel && `(${currentModel})`}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {serverStatus === "disconnected" && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                Cannot connect to Ollama server. Please ensure Ollama is running at http://localhost:11434
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -186,10 +263,50 @@ const ChatInterface = () => {
         <div className="lg:col-span-3">
           <Card className="h-full flex flex-col">
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <MessageSquare className="mr-2 h-5 w-5" />
-                Chat Messages
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center">
+                  <MessageSquare className="mr-2 h-5 w-5" />
+                  Chat Messages
+                </CardTitle>
+                <Dialog open={showChatSettings} onOpenChange={setShowChatSettings}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Chat Settings</DialogTitle>
+                      <DialogDescription>
+                        Configure the system prompt that defines how the AI assistant behaves and responds to your queries.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="system-prompt">System Prompt</Label>
+                        <Textarea
+                          id="system-prompt"
+                          value={systemPrompt}
+                          onChange={(e) => setSystemPrompt(e.target.value)}
+                          placeholder="Enter the system prompt..."
+                          className="min-h-[200px] mt-2"
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">
+                          This prompt defines the AI assistant's personality, knowledge, and response style.
+                        </p>
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" onClick={() => setShowChatSettings(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveSystemPrompt}>
+                          Save Changes
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <ScrollArea className="flex-1 pr-4">

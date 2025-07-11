@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -28,7 +28,10 @@ import {
   CheckCircle,
   Database,
   Search,
+  Trash2,
+  Eye,
 } from "lucide-react";
+import documentService from "@/services/documentService";
 
 interface Document {
   id: string;
@@ -45,68 +48,131 @@ interface DocumentManagerProps {
   onSearch?: (query: string) => void;
 }
 
-const DocumentManager: React.FC<DocumentManagerProps> = ({
-  documents = [
-    {
-      id: "1",
-      name: "network-topology.pdf",
-      type: "PDF",
-      size: "2.4 MB",
-      uploadDate: "2023-06-15",
-      status: "processed",
-    },
-    {
-      id: "2",
-      name: "cisco-router-config.txt",
-      type: "TXT",
-      size: "45 KB",
-      uploadDate: "2023-06-14",
-      status: "processed",
-    },
-    {
-      id: "3",
-      name: "network-diagram.jpg",
-      type: "JPG",
-      size: "1.2 MB",
-      uploadDate: "2023-06-10",
-      status: "processed",
-    },
-  ],
-  onUpload = () => {},
-  onSearch = () => {},
-}) => {
+const DocumentManager: React.FC<DocumentManagerProps> = () => {
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [uploadStatus, setUploadStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
+  const [dbStatus, setDbStatus] = useState<"checking" | "connected" | "disconnected">("checking");
+  const [collectionStats, setCollectionStats] = useState<{ totalDocuments: number; totalChunks: number }>({ totalDocuments: 0, totalChunks: 0 });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Load documents and check DB status on component mount
+  useEffect(() => {
+    const loadDocuments = async () => {
+      try {
+        const isConnected = await documentService.isServerRunning();
+        setDbStatus(isConnected ? "connected" : "disconnected");
+        
+        if (isConnected) {
+          const docs = await documentService.getAllDocuments();
+          const stats = await documentService.getCollectionStats();
+          
+          setDocuments(docs.map(doc => ({
+            id: doc.id,
+            name: doc.metadata.filename,
+            type: doc.metadata.fileType.toUpperCase(),
+            size: `${Math.round(doc.metadata.size / 1024)} KB`,
+            uploadDate: doc.metadata.uploadDate,
+            status: "processed" as const,
+          })));
+          
+          setCollectionStats(stats);
+        }
+      } catch (error) {
+        setDbStatus("disconnected");
+      }
+    };
+
+    loadDocuments();
+  }, []);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setIsUploading(true);
       setUploadProgress(0);
 
-      // Simulate upload progress
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            setIsUploading(false);
-            setUploadStatus("success");
-            setTimeout(() => setUploadStatus("idle"), 3000);
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 300);
+      try {
+        for (let i = 0; i < e.target.files.length; i++) {
+          const file = e.target.files[i];
+          const content = await readFileContent(file);
+          
+          const document = {
+            id: `${Date.now()}_${i}`,
+            content: content,
+            metadata: {
+              filename: file.name,
+              fileType: file.type || file.name.split('.').pop() || 'unknown',
+              uploadDate: new Date().toISOString(),
+              size: file.size,
+              category: "network"
+            }
+          };
 
-      onUpload(e.target.files);
+          const success = await documentService.addDocument(document);
+          if (!success) {
+            throw new Error(`Failed to add document ${file.name}`);
+          }
+
+          setUploadProgress(((i + 1) / e.target.files.length) * 100);
+        }
+
+        setUploadStatus("success");
+        // Reload documents
+        const docs = await documentService.getAllDocuments();
+        setDocuments(docs.map(doc => ({
+          id: doc.id,
+          name: doc.metadata.filename,
+          type: doc.metadata.fileType.toUpperCase(),
+          size: `${Math.round(doc.metadata.size / 1024)} KB`,
+          uploadDate: doc.metadata.uploadDate,
+          status: "processed" as const,
+        })));
+      } catch (error) {
+        console.error("Upload error:", error);
+        setUploadStatus("error");
+      } finally {
+        setIsUploading(false);
+        setTimeout(() => setUploadStatus("idle"), 3000);
+      }
     }
   };
 
-  const handleSearch = () => {
-    onSearch(searchQuery);
+  const readFileContent = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        resolve(content);
+      };
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      const results = await documentService.searchDocuments(searchQuery, 10);
+      console.log("Search results:", results);
+      // You can display search results in a modal or separate section
+    } catch (error) {
+      console.error("Search error:", error);
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    try {
+      const success = await documentService.deleteDocument(documentId);
+      if (success) {
+        setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
   };
 
   return (
@@ -116,6 +182,36 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
         <p className="text-gray-500">
           Upload and manage network documentation to enhance AI responses
         </p>
+        
+        {/* Database Status */}
+        <div className="mt-4">
+          {dbStatus === "checking" && (
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                Checking ChromaDB connection...
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {dbStatus === "connected" && (
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                Connected to ChromaDB. Documents: {collectionStats.totalDocuments}, Chunks: {collectionStats.totalChunks}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {dbStatus === "disconnected" && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                Cannot connect to ChromaDB server. Please ensure ChromaDB is running at http://localhost:8000
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
