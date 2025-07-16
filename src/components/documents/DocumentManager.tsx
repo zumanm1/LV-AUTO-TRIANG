@@ -30,8 +30,12 @@ import {
   Search,
   Trash2,
   Eye,
+  Brain,
+  Shield,
+  BookOpen,
 } from "lucide-react";
 import documentService from "@/services/documentService";
+import knowledgeLibraryService from "@/services/knowledgeLibraryService";
 
 interface Document {
   id: string;
@@ -57,7 +61,16 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
     "idle" | "success" | "error"
   >("idle");
   const [dbStatus, setDbStatus] = useState<"checking" | "connected" | "disconnected">("checking");
-  const [collectionStats, setCollectionStats] = useState<{ totalDocuments: number; totalChunks: number }>({ totalDocuments: 0, totalChunks: 0 });
+  const [collectionStats, setCollectionStats] = useState<{ 
+    totalDocuments: number; 
+    totalChunks: number; 
+    knowledgeLibraries: any 
+  }>({ totalDocuments: 0, totalChunks: 0, knowledgeLibraries: {} });
+  
+  // Knowledge library states
+  const [isLoadingKnowledgeLibraries, setIsLoadingKnowledgeLibraries] = useState<boolean>(false);
+  const [knowledgeLibraryStatus, setKnowledgeLibraryStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [libraryStats, setLibraryStats] = useState<{ errorPatterns: number; bestPractices: number }>({ errorPatterns: 0, bestPractices: 0 });
 
   // Load documents and check DB status on component mount
   useEffect(() => {
@@ -80,6 +93,16 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
           })));
           
           setCollectionStats(stats);
+          
+          // Check if knowledge libraries are already loaded
+          const libStats = knowledgeLibraryService.getLibraryStats();
+          setLibraryStats(libStats);
+          
+          // If libraries are in ChromaDB but not in memory, mark as loaded
+          if (stats.knowledgeLibraries && 
+              (stats.knowledgeLibraries.error_patterns > 0 || stats.knowledgeLibraries.best_practices > 0)) {
+            setKnowledgeLibraryStatus("success");
+          }
         }
       } catch (error) {
         setDbStatus("disconnected");
@@ -111,7 +134,8 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
             }
           };
 
-          const success = await documentService.addDocument(document);
+          // Use auto chunking strategy for regular document uploads
+          const success = await documentService.addDocument(document, 'auto');
           if (!success) {
             throw new Error(`Failed to add document ${file.name}`);
           }
@@ -122,6 +146,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
         setUploadStatus("success");
         // Reload documents
         const docs = await documentService.getAllDocuments();
+        const stats = await documentService.getCollectionStats();
         setDocuments(docs.map(doc => ({
           id: doc.id,
           name: doc.metadata.filename,
@@ -130,6 +155,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
           uploadDate: doc.metadata.uploadDate,
           status: "processed" as const,
         })));
+        setCollectionStats(stats);
       } catch (error) {
         console.error("Upload error:", error);
         setUploadStatus("error");
@@ -137,6 +163,40 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
         setIsUploading(false);
         setTimeout(() => setUploadStatus("idle"), 3000);
       }
+    }
+  };
+
+  const handleLoadKnowledgeLibraries = async () => {
+    setIsLoadingKnowledgeLibraries(true);
+    setKnowledgeLibraryStatus("loading");
+
+    try {
+      // Load knowledge libraries into memory
+      const loaded = await knowledgeLibraryService.loadKnowledgeLibraries();
+      if (!loaded) {
+        throw new Error("Failed to load knowledge libraries from files");
+      }
+
+      // Upload to ChromaDB
+      const uploaded = await knowledgeLibraryService.uploadLibrariesToChromaDB();
+      if (!uploaded) {
+        throw new Error("Failed to upload knowledge libraries to ChromaDB");
+      }
+
+      // Update stats
+      const stats = await documentService.getCollectionStats();
+      const libStats = knowledgeLibraryService.getLibraryStats();
+      
+      setCollectionStats(stats);
+      setLibraryStats(libStats);
+      setKnowledgeLibraryStatus("success");
+
+      console.log("Knowledge libraries loaded successfully!");
+    } catch (error) {
+      console.error("Error loading knowledge libraries:", error);
+      setKnowledgeLibraryStatus("error");
+    } finally {
+      setIsLoadingKnowledgeLibraries(false);
     }
   };
 
@@ -156,8 +216,8 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
     if (!searchQuery.trim()) return;
     
     try {
-      const results = await documentService.searchDocuments(searchQuery, 10);
-      console.log("Search results:", results);
+      const results = await documentService.enhancedSearch(searchQuery, 10);
+      console.log("Enhanced search results:", results);
       // You can display search results in a modal or separate section
     } catch (error) {
       console.error("Search error:", error);
@@ -169,22 +229,51 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
       const success = await documentService.deleteDocument(documentId);
       if (success) {
         setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+        // Update stats
+        const stats = await documentService.getCollectionStats();
+        setCollectionStats(stats);
       }
     } catch (error) {
       console.error("Delete error:", error);
     }
   };
 
+  const getKnowledgeLibraryStatusColor = (status: string) => {
+    switch (status) {
+      case "success":
+        return "border-green-200 bg-green-50";
+      case "loading":
+        return "border-yellow-200 bg-yellow-50";
+      case "error":
+        return "border-red-200 bg-red-50";
+      default:
+        return "border-blue-200 bg-blue-50";
+    }
+  };
+
+  const getKnowledgeLibraryStatusIcon = (status: string) => {
+    switch (status) {
+      case "success":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "loading":
+        return <AlertCircle className="h-4 w-4 text-yellow-600" />;
+      case "error":
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Brain className="h-4 w-4 text-blue-600" />;
+    }
+  };
+
   return (
     <div className="bg-white">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Document Management</h1>
+        <h1 className="text-3xl font-bold mb-2">Enhanced Document Management</h1>
         <p className="text-gray-500">
-          Upload and manage network documentation to enhance AI responses
+          Upload documents and manage knowledge libraries to enhance AI responses with error patterns and best practices
         </p>
         
         {/* Database Status */}
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
           {dbStatus === "checking" && (
             <Alert className="border-yellow-200 bg-yellow-50">
               <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -199,6 +288,13 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
                 Connected to ChromaDB. Documents: {collectionStats.totalDocuments}, Chunks: {collectionStats.totalChunks}
+                {Object.keys(collectionStats.knowledgeLibraries).length > 0 && (
+                  <div className="mt-2">
+                    Knowledge Libraries: {Object.entries(collectionStats.knowledgeLibraries).map(([key, value]) => 
+                      `${key}: ${value}`
+                    ).join(", ")}
+                  </div>
+                )}
               </AlertDescription>
             </Alert>
           )}
@@ -211,6 +307,27 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
               </AlertDescription>
             </Alert>
           )}
+
+          {/* Knowledge Library Status */}
+          <Alert className={getKnowledgeLibraryStatusColor(knowledgeLibraryStatus)}>
+            {getKnowledgeLibraryStatusIcon(knowledgeLibraryStatus)}
+            <AlertDescription>
+              {knowledgeLibraryStatus === "success" && (
+                <span className="text-green-800">
+                  Knowledge Libraries Loaded: {libraryStats.errorPatterns} error patterns, {libraryStats.bestPractices} best practices
+                </span>
+              )}
+              {knowledgeLibraryStatus === "loading" && (
+                <span className="text-yellow-800">Loading knowledge libraries...</span>
+              )}
+              {knowledgeLibraryStatus === "error" && (
+                <span className="text-red-800">Failed to load knowledge libraries. Check console for details.</span>
+              )}
+              {knowledgeLibraryStatus === "idle" && (
+                <span className="text-blue-800">Knowledge libraries not loaded. Click "Load Knowledge Libraries" to enhance RAG capabilities.</span>
+              )}
+            </AlertDescription>
+          </Alert>
         </div>
       </div>
 
@@ -219,7 +336,86 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
           <TabsTrigger value="upload">Upload Documents</TabsTrigger>
           <TabsTrigger value="manage">Manage Documents</TabsTrigger>
           <TabsTrigger value="search">Search Documents</TabsTrigger>
+          <TabsTrigger value="knowledge">Knowledge Libraries</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="knowledge">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain size={20} />
+                Knowledge Libraries (Option 8 - Enhanced RAG)
+              </CardTitle>
+              <CardDescription>
+                Load pre-built error patterns and best practices libraries to dramatically improve AI accuracy.
+                This implements Phase 1 of the strategic plan for enhanced RAG capabilities.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="border-red-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-red-600" />
+                      Error Patterns Library
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Comprehensive database of common Cisco IOS configuration errors, their causes, and solutions.
+                    </p>
+                    <Badge variant="outline" className="text-red-600 border-red-200">
+                      {libraryStats.errorPatterns > 0 ? `${libraryStats.errorPatterns} patterns loaded` : 'Not loaded'}
+                    </Badge>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-green-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-green-600" />
+                      Best Practices Library
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Official Cisco guides, industry standards, and proven network configuration practices.
+                    </p>
+                    <Badge variant="outline" className="text-green-600 border-green-200">
+                      {libraryStats.bestPractices > 0 ? `${libraryStats.bestPractices} practices loaded` : 'Not loaded'}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="pt-4">
+                <Button
+                  onClick={handleLoadKnowledgeLibraries}
+                  disabled={isLoadingKnowledgeLibraries || dbStatus !== "connected"}
+                  className="w-full"
+                >
+                  {isLoadingKnowledgeLibraries ? (
+                    <>
+                      <AlertCircle className="mr-2 h-4 w-4 animate-spin" />
+                      Loading Knowledge Libraries...
+                    </>
+                  ) : (
+                    <>
+                      <Brain className="mr-2 h-4 w-4" />
+                      Load Knowledge Libraries
+                    </>
+                  )}
+                </Button>
+                
+                {knowledgeLibraryStatus === "success" && (
+                  <p className="text-sm text-green-600 mt-2 text-center">
+                    ✅ Enhanced RAG is now active! The AI can now validate against error patterns and incorporate best practices.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="upload">
           <Card>
@@ -230,7 +426,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
               </CardTitle>
               <CardDescription>
                 Upload network documentation files to enhance AI responses.
-                Supported formats: PDF, TXT, JPG, PNG.
+                Supported formats: PDF, TXT, JPG, PNG. Files will use intelligent chunking strategies.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -240,7 +436,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
                   Drag and drop files here
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  or click to browse files
+                  or click to browse files (Auto-chunking enabled)
                 </p>
                 <Input
                   type="file"
@@ -249,44 +445,45 @@ const DocumentManager: React.FC<DocumentManagerProps> = () => {
                   className="hidden"
                   id="file-upload"
                   onChange={handleFileUpload}
+                  disabled={isUploading}
                 />
-                <Button asChild>
-                  <label htmlFor="file-upload">Select Files</label>
-                </Button>
+                <label
+                  htmlFor="file-upload"
+                  className={`cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    isUploading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <Upload size={16} className="mr-2" />
+                  Choose Files
+                </label>
               </div>
 
               {isUploading && (
-                <div className="mt-6">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm">Uploading...</span>
-                    <span className="text-sm">{uploadProgress}%</span>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Uploading...</span>
+                    <span className="text-sm text-gray-500">
+                      {Math.round(uploadProgress)}%
+                    </span>
                   </div>
-                  <Progress value={uploadProgress} className="h-2" />
+                  <Progress value={uploadProgress} className="w-full" />
                 </div>
               )}
 
               {uploadStatus === "success" && (
-                <Alert className="mt-6 bg-green-50 border-green-200">
+                <Alert className="mt-4 border-green-200 bg-green-50">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-600">
-                    Upload Successful
-                  </AlertTitle>
-                  <AlertDescription className="text-green-600">
-                    Your documents have been uploaded and are being processed.
+                  <AlertDescription className="text-green-800">
+                    Files uploaded successfully!
                   </AlertDescription>
                 </Alert>
               )}
 
               {uploadStatus === "error" && (
-                <Alert
-                  className="mt-6 bg-red-50 border-red-200"
-                  variant="destructive"
-                >
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Upload Failed</AlertTitle>
-                  <AlertDescription>
-                    There was an error uploading your documents. Please try
-                    again.
+                <Alert className="mt-4 border-red-200 bg-red-50">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    Upload failed. Please try again.
                   </AlertDescription>
                 </Alert>
               )}
