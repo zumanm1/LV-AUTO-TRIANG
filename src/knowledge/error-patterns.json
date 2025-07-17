@@ -1,0 +1,154 @@
+[
+  {
+    "id": "ep-001",
+    "category": "routing",
+    "pattern": "OSPF neighbor down",
+    "description": "OSPF neighbor relationship has failed or is not established",
+    "severity": "high",
+    "solutions": [
+      "Check physical connectivity between routers",
+      "Verify OSPF configuration on both routers",
+      "Check authentication settings",
+      "Verify network statements in OSPF configuration",
+      "Check for MTU mismatches"
+    ],
+    "examples": [
+      "Router# show ip ospf neighbor",
+      "Router# show ip ospf interface",
+      "Router# debug ip ospf events"
+    ]
+  },
+  {
+    "id": "ep-002",
+    "category": "switching",
+    "pattern": "Spanning tree blocking",
+    "description": "Port is blocked by spanning tree protocol",
+    "severity": "medium",
+    "solutions": [
+      "Check spanning tree configuration",
+      "Verify root bridge election",
+      "Check for loops in the network",
+      "Review port priority settings",
+      "Consider using Rapid Spanning Tree"
+    ],
+    "examples": [
+      "Switch# show spanning-tree",
+      "Switch# show spanning-tree blockedports",
+      "Switch# show spanning-tree root"
+    ]
+  },
+  {
+    "id": "ep-003",
+    "category": "security",
+    "pattern": "ACL blocking traffic",
+    "description": "Access Control List is preventing legitimate traffic",
+    "severity": "high",
+    "solutions": [
+      "Review ACL configuration",
+      "Check ACL order and specificity",
+      "Verify source and destination addresses",
+      "Test with permit statements",
+      "Use ACL logging for debugging"
+    ],
+    "examples": [
+      "Router# show access-lists",
+      "Router# show ip access-lists",
+      "Router# debug ip packet"
+    ]
+  },
+  {
+    "id": "ep-004",
+    "category": "vlan",
+    "pattern": "VLAN trunk issues",
+    "description": "VLAN trunk configuration problems between switches",
+    "severity": "high",
+    "solutions": [
+      "Verify trunk configuration on both switches",
+      "Check allowed VLANs on trunk",
+      "Verify native VLAN settings",
+      "Check for VLAN mismatches",
+      "Test with ping between VLANs"
+    ],
+    "examples": [
+      "Switch# show interfaces trunk",
+      "Switch# show vlan",
+      "Switch# show spanning-tree vlan"
+    ]
+  },
+  {
+    "id": "ep-005",
+    "category": "dhcp",
+    "pattern": "DHCP server not responding",
+    "description": "DHCP server is not providing IP addresses to clients",
+    "severity": "critical",
+    "solutions": [
+      "Check DHCP server status",
+      "Verify DHCP pool configuration",
+      "Check for IP conflicts",
+      "Verify DHCP relay configuration",
+      "Test DHCP server manually"
+    ],
+    "examples": [
+      "Router# show ip dhcp pool",
+      "Router# show ip dhcp binding",
+      "Router# debug ip dhcp server events"
+    ]
+  },
+  {
+    "id": "ep-006",
+    "category": "bgp",
+    "pattern": "BGP neighbor not established",
+    "description": "BGP peering relationship failed to establish",
+    "severity": "high",
+    "solutions": [
+      "Check BGP configuration on both routers",
+      "Verify AS number configuration",
+      "Check for route filters",
+      "Verify BGP timers",
+      "Check for authentication issues"
+    ],
+    "examples": [
+      "Router# show ip bgp summary",
+      "Router# show ip bgp neighbors",
+      "Router# debug ip bgp events"
+    ]
+  },
+  {
+    "id": "ep-007",
+    "category": "qos",
+    "pattern": "QoS policy not working",
+    "description": "Quality of Service policies not being applied correctly",
+    "severity": "medium",
+    "solutions": [
+      "Verify QoS policy configuration",
+      "Check policy-map and class-map",
+      "Verify interface QoS settings",
+      "Test with traffic generation",
+      "Review QoS statistics"
+    ],
+    "examples": [
+      "Router# show policy-map",
+      "Router# show policy-map interface",
+      "Router# show qos statistics"
+    ]
+  },
+  {
+    "id": "ep-008",
+    "category": "vpn",
+    "pattern": "VPN tunnel down",
+    "description": "VPN tunnel is not established or has failed",
+    "severity": "critical",
+    "solutions": [
+      "Check VPN configuration on both ends",
+      "Verify pre-shared keys or certificates",
+      "Check for routing issues",
+      "Verify firewall rules",
+      "Test connectivity between endpoints"
+    ],
+    "examples": [
+      "Router# show crypto isakmp sa",
+      "Router# show crypto ipsec sa",
+      "Router# debug crypto isakmp"
+    ]
+  }
+] 

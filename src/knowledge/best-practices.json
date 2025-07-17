@@ -1,0 +1,154 @@
+[
+  {
+    "id": "bp-001",
+    "category": "security",
+    "title": "Network Segmentation",
+    "description": "Implement proper network segmentation to isolate different types of traffic and reduce attack surface",
+    "implementation": "Use VLANs, firewalls, and access control lists to segment networks based on function, security requirements, and user groups",
+    "benefits": [
+      "Reduces attack surface",
+      "Improves network performance",
+      "Simplifies troubleshooting",
+      "Enhances security compliance",
+      "Enables better traffic management"
+    ],
+    "examples": [
+      "Create separate VLANs for servers, workstations, and IoT devices",
+      "Implement DMZ for public-facing services",
+      "Use firewall rules to control inter-VLAN traffic"
+    ]
+  },
+  {
+    "id": "bp-002",
+    "category": "routing",
+    "title": "Route Summarization",
+    "description": "Implement route summarization to reduce routing table size and improve network stability",
+    "implementation": "Group contiguous network addresses and advertise them as a single route to reduce routing overhead",
+    "benefits": [
+      "Reduces routing table size",
+      "Improves convergence time",
+      "Reduces memory usage",
+      "Enhances network stability",
+      "Simplifies route management"
+    ],
+    "examples": [
+      "Summarize 192.168.1.0/24, 192.168.2.0/24, 192.168.3.0/24 as 192.168.0.0/22",
+      "Use area range commands in OSPF",
+      "Implement route aggregation in BGP"
+    ]
+  },
+  {
+    "id": "bp-003",
+    "category": "monitoring",
+    "title": "Network Monitoring",
+    "description": "Implement comprehensive network monitoring to detect issues before they impact users",
+    "implementation": "Deploy monitoring tools to track network performance, availability, and security events",
+    "benefits": [
+      "Proactive issue detection",
+      "Improved uptime",
+      "Better capacity planning",
+      "Faster troubleshooting",
+      "Enhanced security awareness"
+    ],
+    "examples": [
+      "Use SNMP for device monitoring",
+      "Implement NetFlow for traffic analysis",
+      "Deploy syslog servers for log collection"
+    ]
+  },
+  {
+    "id": "bp-004",
+    "category": "backup",
+    "title": "Configuration Backup",
+    "description": "Regularly backup network device configurations to ensure quick recovery from failures",
+    "implementation": "Automate configuration backups and store them securely with version control",
+    "benefits": [
+      "Quick disaster recovery",
+      "Configuration version control",
+      "Audit trail maintenance",
+      "Reduced downtime",
+      "Compliance requirements"
+    ],
+    "examples": [
+      "Use TFTP or SCP for automated backups",
+      "Implement configuration management tools",
+      "Store backups in secure, redundant locations"
+    ]
+  },
+  {
+    "id": "bp-005",
+    "category": "qos",
+    "title": "Quality of Service Implementation",
+    "description": "Implement QoS policies to ensure critical applications receive appropriate bandwidth and priority",
+    "implementation": "Define traffic classes, assign priorities, and configure queuing mechanisms based on application requirements",
+    "benefits": [
+      "Improved application performance",
+      "Better user experience",
+      "Efficient bandwidth utilization",
+      "Support for real-time applications",
+      "Reduced network congestion"
+    ],
+    "examples": [
+      "Prioritize VoIP traffic with EF (Expedited Forwarding)",
+      "Use CBWFQ for bandwidth allocation",
+      "Implement traffic policing and shaping"
+    ]
+  },
+  {
+    "id": "bp-006",
+    "category": "redundancy",
+    "title": "Network Redundancy",
+    "description": "Implement redundant paths and devices to ensure high availability and fault tolerance",
+    "implementation": "Design networks with multiple paths, redundant devices, and automatic failover mechanisms",
+    "benefits": [
+      "High availability",
+      "Fault tolerance",
+      "Reduced downtime",
+      "Load balancing capabilities",
+      "Improved reliability"
+    ],
+    "examples": [
+      "Use redundant links with spanning tree",
+      "Implement HSRP or VRRP for gateway redundancy",
+      "Deploy redundant core switches"
+    ]
+  },
+  {
+    "id": "bp-007",
+    "category": "documentation",
+    "title": "Network Documentation",
+    "description": "Maintain comprehensive network documentation to facilitate troubleshooting and maintenance",
+    "implementation": "Document network topology, configurations, IP addressing, and operational procedures",
+    "benefits": [
+      "Faster troubleshooting",
+      "Easier onboarding",
+      "Better change management",
+      "Compliance requirements",
+      "Knowledge preservation"
+    ],
+    "examples": [
+      "Create network topology diagrams",
+      "Maintain IP addressing spreadsheet",
+      "Document configuration templates"
+    ]
+  },
+  {
+    "id": "bp-008",
+    "category": "security",
+    "title": "Access Control",
+    "description": "Implement strong access control measures to protect network devices and resources",
+    "implementation": "Use strong authentication, authorization, and accounting (AAA) mechanisms for network access",
+    "benefits": [
+      "Enhanced security",
+      "Audit trail",
+      "Compliance with regulations",
+      "Reduced unauthorized access",
+      "Better accountability"
+    ],
+    "examples": [
+      "Use TACACS+ or RADIUS for authentication",
+      "Implement role-based access control",
+      "Enable command logging and accounting"
+    ]
+  }
+] 

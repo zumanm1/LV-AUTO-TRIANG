@@ -83,14 +83,14 @@ class OllamaService {
         } catch (error) {
           console.error("Error searching enhanced documents:", error);
           // Fallback to basic document search
-          try {
-            const searchResults = await documentService.searchDocuments(prompt, 3);
-            if (searchResults.length > 0) {
+        try {
+          const searchResults = await documentService.searchDocuments(prompt, 3);
+          if (searchResults.length > 0) {
               relevantContext = "\n\nRelevant documentation:\n" + 
-                searchResults.map((result, index) => 
-                  `[Document ${index + 1} - ${result.metadata.filename}]\n${result.content}\n`
-                ).join("\n");
-            }
+              searchResults.map((result, index) => 
+                `[Document ${index + 1} - ${result.metadata.filename}]\n${result.content}\n`
+              ).join("\n");
+          }
           } catch (fallbackError) {
             console.error("Error with fallback document search:", fallbackError);
           }

@@ -452,14 +452,14 @@ Assessment:`;
 
           {/* Generated Commands */}
           {generatedCommands && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Generated Commands</CardTitle>
-                <CardDescription>
+          <Card>
+            <CardHeader>
+              <CardTitle>Generated Commands</CardTitle>
+              <CardDescription>
                   AI-generated Cisco IOS configuration commands
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
                 <Textarea
                   value={generatedCommands}
                   onChange={(e) => setGeneratedCommands(e.target.value)}
@@ -468,32 +468,32 @@ Assessment:`;
                 />
               </CardContent>
               <CardFooter>
-                <Button
-                  onClick={handleValidateCommands}
+                    <Button
+                      onClick={handleValidateCommands}
                   disabled={isValidating || !generatedCommands.trim()}
                   className="mr-2"
-                >
-                  {isValidating ? (
+                    >
+                      {isValidating ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Validating...
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Validating...
                     </>
-                  ) : (
+                      ) : (
                     <>
                       <Shield className="mr-2 h-4 w-4" />
                       Validate Commands
                     </>
-                  )}
-                </Button>
+                      )}
+                    </Button>
                 
                 {enhancedRAGStatus?.knowledgeLibrariesLoaded && (
                   <Badge variant="outline" className="text-green-600 border-green-200">
                     <BookOpen className="mr-1 h-3 w-3" />
                     Enhanced Validation
                   </Badge>
-                )}
+              )}
               </CardFooter>
-            </Card>
+          </Card>
           )}
         </div>
 
@@ -501,13 +501,13 @@ Assessment:`;
         <div className="space-y-6">
           {/* Validation Steps */}
           {automationSteps.length > 0 && (
-            <Card>
-              <CardHeader>
+          <Card>
+            <CardHeader>
                 <CardTitle>Enhanced Validation Pipeline</CardTitle>
-                <CardDescription>
+              <CardDescription>
                   Multi-step validation using error patterns and best practices
-                </CardDescription>
-              </CardHeader>
+              </CardDescription>
+            </CardHeader>
               <CardContent className="space-y-3">
                 {automationSteps.map((step, index) => (
                   <div
@@ -519,23 +519,23 @@ Assessment:`;
                         {getStepIcon(step.status)}
                         <span className="font-medium">{step.name}</span>
                       </div>
-                      {step.timestamp && (
-                        <span className="text-xs text-gray-500">
-                          {step.timestamp}
-                        </span>
-                      )}
-                    </div>
+                          {step.timestamp && (
+                            <span className="text-xs text-gray-500">
+                              {step.timestamp}
+                            </span>
+                          )}
+                        </div>
                     <p className="text-sm text-gray-600 mt-1 ml-6">
-                      {step.details}
-                    </p>
-                  </div>
-                ))}
+                          {step.details}
+                        </p>
+                    </div>
+                  ))}
               </CardContent>
             </Card>
-          )}
+              )}
 
           {/* Deployment Section */}
-          {validationStatus === "success" && (
+              {validationStatus === "success" && (
             <Card>
               <CardHeader>
                 <CardTitle>Deployment</CardTitle>
@@ -544,23 +544,23 @@ Assessment:`;
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button
-                  onClick={handleDeployConfiguration}
-                  disabled={isDeploying}
-                  className="w-full"
-                >
-                  {isDeploying ? (
+                  <Button
+                    onClick={handleDeployConfiguration}
+                    disabled={isDeploying}
+                    className="w-full"
+                  >
+                    {isDeploying ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deploying...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Deploying...
                     </>
-                  ) : (
+                    ) : (
                     <>
-                      <Play className="mr-2 h-4 w-4" />
-                      Deploy Configuration
+                        <Play className="mr-2 h-4 w-4" />
+                        Deploy Configuration
                     </>
-                  )}
-                </Button>
+                    )}
+                  </Button>
 
                 {deploymentStatus === "success" && (
                   <Alert className="mt-4 border-green-200 bg-green-50">
@@ -579,8 +579,8 @@ Assessment:`;
                     </AlertDescription>
                   </Alert>
                 )}
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
           )}
 
           {/* Error Messages */}

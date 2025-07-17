@@ -1,0 +1,162 @@
+[
+  {
+    "id": "np-001",
+    "name": "OSPF",
+    "description": "Open Shortest Path First - Link-state routing protocol for IP networks",
+    "configuration": "router ospf 1\n network 192.168.1.0 0.0.0.255 area 0\n network 10.0.0.0 0.255.255.255 area 0\n area 0 authentication message-digest",
+    "troubleshooting": [
+      "Check OSPF neighbor status with 'show ip ospf neighbor'",
+      "Verify OSPF interface configuration with 'show ip ospf interface'",
+      "Check OSPF database with 'show ip ospf database'",
+      "Debug OSPF events with 'debug ip ospf events'",
+      "Verify network statements and area assignments"
+    ],
+    "bestPractices": [
+      "Use authentication for security",
+      "Implement route summarization",
+      "Configure appropriate timers",
+      "Use stub areas for better performance",
+      "Monitor OSPF database size"
+    ]
+  },
+  {
+    "id": "np-002",
+    "name": "BGP",
+    "description": "Border Gateway Protocol - Path vector protocol for inter-domain routing",
+    "configuration": "router bgp 65001\n neighbor 192.168.1.1 remote-as 65002\n network 10.0.0.0 mask 255.255.255.0\n neighbor 192.168.1.1 route-map INBOUND in",
+    "troubleshooting": [
+      "Check BGP neighbor status with 'show ip bgp summary'",
+      "Verify BGP routes with 'show ip bgp'",
+      "Check BGP configuration with 'show ip bgp neighbors'",
+      "Debug BGP events with 'debug ip bgp events'",
+      "Verify route policies and filters"
+    ],
+    "bestPractices": [
+      "Use route filtering to control route advertisements",
+      "Implement BGP communities for route tagging",
+      "Configure appropriate BGP timers",
+      "Use route reflectors for scalability",
+      "Monitor BGP convergence times"
+    ]
+  },
+  {
+    "id": "np-003",
+    "name": "EIGRP",
+    "description": "Enhanced Interior Gateway Routing Protocol - Advanced distance vector protocol",
+    "configuration": "router eigrp 100\n network 192.168.1.0\n network 10.0.0.0\n no auto-summary\n eigrp router-id 1.1.1.1",
+    "troubleshooting": [
+      "Check EIGRP neighbor status with 'show ip eigrp neighbors'",
+      "Verify EIGRP topology with 'show ip eigrp topology'",
+      "Check EIGRP interfaces with 'show ip eigrp interfaces'",
+      "Debug EIGRP events with 'debug ip eigrp'",
+      "Verify network statements and AS number"
+    ],
+    "bestPractices": [
+      "Disable auto-summary for better route control",
+      "Configure router-id for stability",
+      "Use stub configuration for spoke sites",
+      "Monitor EIGRP query scope",
+      "Implement route filtering where needed"
+    ]
+  },
+  {
+    "id": "np-004",
+    "name": "STP",
+    "description": "Spanning Tree Protocol - Prevents loops in switched networks",
+    "configuration": "spanning-tree mode rapid-pvst\n spanning-tree vlan 1-100 root primary\n spanning-tree extend system-id",
+    "troubleshooting": [
+      "Check spanning tree status with 'show spanning-tree'",
+      "Verify root bridge with 'show spanning-tree root'",
+      "Check blocked ports with 'show spanning-tree blockedports'",
+      "Debug spanning tree with 'debug spanning-tree events'",
+      "Verify VLAN configuration and trunk settings"
+    ],
+    "bestPractices": [
+      "Use Rapid Spanning Tree for faster convergence",
+      "Configure root bridge placement strategically",
+      "Use portfast for end devices",
+      "Monitor spanning tree topology changes",
+      "Implement BPDU guard for security"
+    ]
+  },
+  {
+    "id": "np-005",
+    "name": "HSRP",
+    "description": "Hot Standby Router Protocol - Provides gateway redundancy",
+    "configuration": "interface GigabitEthernet0/0\n ip address 192.168.1.1 255.255.255.0\n standby 1 ip 192.168.1.254\n standby 1 priority 110\n standby 1 preempt",
+    "troubleshooting": [
+      "Check HSRP status with 'show standby'",
+      "Verify HSRP configuration with 'show standby brief'",
+      "Check HSRP timers with 'show standby detail'",
+      "Debug HSRP events with 'debug standby events'",
+      "Verify interface and IP configuration"
+    ],
+    "bestPractices": [
+      "Configure preempt for predictable failover",
+      "Use different priorities for primary/backup",
+      "Configure appropriate timers",
+      "Monitor HSRP state changes",
+      "Use authentication for security"
+    ]
+  },
+  {
+    "id": "np-006",
+    "name": "VTP",
+    "description": "VLAN Trunking Protocol - Manages VLAN configuration across switches",
+    "configuration": "vtp mode server\n vtp domain MYDOMAIN\n vtp password SECRET\n vtp version 3",
+    "troubleshooting": [
+      "Check VTP status with 'show vtp status'",
+      "Verify VTP configuration with 'show vtp password'",
+      "Check VTP counters with 'show vtp counters'",
+      "Debug VTP events with 'debug sw-vlan vtp events'",
+      "Verify domain name and password"
+    ],
+    "bestPractices": [
+      "Use VTP version 3 for better security",
+      "Configure VTP passwords",
+      "Limit VTP server devices",
+      "Use transparent mode for isolated switches",
+      "Monitor VTP revision numbers"
+    ]
+  },
+  {
+    "id": "np-007",
+    "name": "DHCP",
+    "description": "Dynamic Host Configuration Protocol - Automates IP address assignment",
+    "configuration": "ip dhcp pool LAN\n network 192.168.1.0 255.255.255.0\n default-router 192.168.1.1\n dns-server 8.8.8.8 8.8.4.4\n lease 7",
+    "troubleshooting": [
+      "Check DHCP pool status with 'show ip dhcp pool'",
+      "Verify DHCP bindings with 'show ip dhcp binding'",
+      "Check DHCP conflicts with 'show ip dhcp conflict'",
+      "Debug DHCP events with 'debug ip dhcp server events'",
+      "Verify DHCP relay configuration"
+    ],
+    "bestPractices": [
+      "Configure appropriate lease times",
+      "Use DHCP snooping for security",
+      "Implement DHCP relay for remote subnets",
+      "Monitor DHCP pool utilization",
+      "Configure DHCP reservations for critical devices"
+    ]
+  },
+  {
+    "id": "np-008",
+    "name": "NAT",
+    "description": "Network Address Translation - Translates private IP addresses to public",
+    "configuration": "ip nat inside source list 1 interface GigabitEthernet0/1 overload\n access-list 1 permit 192.168.1.0 0.0.0.255\n interface GigabitEthernet0/0\n ip nat inside\n interface GigabitEthernet0/1\n ip nat outside",
+    "troubleshooting": [
+      "Check NAT translations with 'show ip nat translations'",
+      "Verify NAT statistics with 'show ip nat statistics'",
+      "Check NAT configuration with 'show ip nat configuration'",
+      "Debug NAT events with 'debug ip nat'",
+      "Verify access lists and interface configuration"
+    ],
+    "bestPractices": [
+      "Use specific access lists for NAT",
+      "Monitor NAT translation table size",
+      "Configure NAT timeouts appropriately",
+      "Use static NAT for servers",
+      "Implement NAT overload for conservation"
+    ]
+  }
+] 

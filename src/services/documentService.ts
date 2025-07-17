@@ -56,6 +56,10 @@ class DocumentService {
       ['error_pattern', {
         name: 'Error Pattern Structured',
         method: this.errorPatternChunking.bind(this)
+      }],
+      ['knowledge', {
+        name: 'Knowledge Library Structured',
+        method: this.knowledgeChunking.bind(this)
       }]
     ]);
   }
@@ -323,6 +327,44 @@ class DocumentService {
     }
 
     return chunks.filter(chunk => chunk.length > 0);
+  }
+
+  // Structured chunking for knowledge library content
+  private knowledgeChunking(content: string): string[] {
+    // For knowledge library content, keep each item as a single chunk
+    // This preserves the structured nature of knowledge items
+    const lines = content.split('\n');
+    const chunks: string[] = [];
+    let currentChunk = '';
+    
+    for (const line of lines) {
+      // Start new chunk for major sections
+      if (line.trim().startsWith('Solutions:') || 
+          line.trim().startsWith('Examples:') || 
+          line.trim().startsWith('Benefits:') ||
+          line.trim().startsWith('Implementation:') ||
+          line.trim().startsWith('Configuration:') ||
+          line.trim().startsWith('Troubleshooting:') ||
+          line.trim().startsWith('Best Practices:')) {
+        if (currentChunk.trim()) {
+          chunks.push(currentChunk.trim());
+        }
+        currentChunk = line;
+      } else {
+        currentChunk += '\n' + line;
+      }
+    }
+    
+    if (currentChunk.trim()) {
+      chunks.push(currentChunk.trim());
+    }
+    
+    // If we have only one chunk, split it into smaller pieces
+    if (chunks.length === 1 && chunks[0].length > 2000) {
+      return this.splitDocumentIntoChunks(chunks[0], 1500, 200);
+    }
+    
+    return chunks.filter(chunk => chunk.length > 30);
   }
 
   async getAllDocuments(): Promise<Document[]> {
